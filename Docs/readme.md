@@ -1,7 +1,7 @@
 
 ---
 
-### Directory and File Descriptions
+### Architecture of Directory and File Descriptions
 
 #### `ansible/`
 - **Purpose**: Contains all Ansible-related configuration and automation logic.
