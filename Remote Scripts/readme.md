@@ -58,8 +58,8 @@ These scripts:
    - **Target**: Windows 11 Pro (template; adjust IP if used).
    - **Command**:
      ```powershell
-     Invoke-WebRequest -Uri "Invoke-WebRequest -Uri "https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/remote_scripts/windows_connect.ps1" -OutFile "windows_connect.ps1"
-.\windows_connect.ps1 -ControlNodeIP "192.168.10.100""
+     Invoke-WebRequest -Uri "Invoke-WebRequest -Uri "Invoke-WebRequest -Uri "https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/remote_scripts/windows_connect.ps1" -OutFile "windows_connect.ps1"
+.\windows_connect.ps1 -ControlNodeIP "192.168.10.100" "
      ```
    - **Notes**: Not currently active in this setup; requires IP specification for use.
 
