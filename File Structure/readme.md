@@ -41,7 +41,10 @@ rhel-ansible-k8s-it-support/
 │   ├── precheck.sh             # Checks VM connectivity
 │   ├── metrics_collector.sh    # Collects VM metrics for Kubernetes
 │   ├── checkin_listener.py     # Listens for remote check-ins
-│   └── ssh_key_server.py       # Serves SSH public key over HTTPS
+│   ├── ssh_key_server.py       # Serves SSH public key over HTTPS
+│   ├── Dockerfile              # Docker image definition
+│   ├── entrypoint.sh           # Entrypoint script for container
+│   └── README.md               # Documentation for system scripts
 ├── docs/                       # Additional project documentation
 │   ├── architecture.md         # Project architecture overview
 │   └── setup-guide.md          # Detailed setup instructions
