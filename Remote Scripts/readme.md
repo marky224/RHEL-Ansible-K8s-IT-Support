@@ -106,14 +106,15 @@ These scripts:
   ```plaintext
   2025-02-24 10:00:00 - Check-in received: hostname=rhel9-workstation&ip=192.168.10.134&os=rhel9
   2025-02-24 10:00:05 - Check-in received: hostname=WIN11-PC&ip=192.168.10.135&os=windows11
+  ```
+#### Test Connectivity: From the control node:
+  ```bash
+  ansible all -m ping -i ansible/inventory/inventory.yml  # For Linux
+  ansible windows_pc -m win_ping -i ansible/inventory/inventory.yml  # For Windows
+  ```
+#### Troubleshooting: Review logs on the remote PC for detailed errors:
+  ```Linux:
+  /var/log/ansible_connect.log
 
-Test Connectivity: From the control node:
-bash
-
-ansible all -m ping -i ansible/inventory/inventory.yml  # For Linux
-ansible windows_pc -m win_ping -i ansible/inventory/inventory.yml  # For Windows
-
-Troubleshooting: Review logs on the remote PC for detailed errors:
-Linux: /var/log/ansible_connect.log
-
-Windows: C:\ansible_connect.log
+  ```Windows:
+  C:\ansible_connect.log
