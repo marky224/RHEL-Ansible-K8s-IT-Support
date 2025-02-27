@@ -48,7 +48,7 @@ These scripts:
    - **Target**: RHEL 9 workstation at `192.168.10.134`.
    - **Command**:
      ```bash
-     curl -O https://raw.githubusercontent.com/yourusername/rhel-ansible-k8s-it-support/main/remote_scripts/rhel9_connect.sh
+     curl -O https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/remote_scripts/rhel9_connect.sh
      chmod +x rhel9_connect.sh
      sudo ./rhel9_connect.sh
      ```
@@ -58,7 +58,7 @@ These scripts:
    - **Target**: Windows 11 Pro (template; adjust IP if used).
    - **Command**:
      ```powershell
-     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/yourusername/rhel-ansible-k8s-it-support/main/remote_scripts/windows_connect.ps1" -OutFile "windows_connect.ps1"
+     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/remote_scripts/windows_connect.ps1" -OutFile "windows_connect.ps1"
      .\windows_connect.ps1 -ControlNodeIP "192.168.10.100" -Username "admin" -Password "P@ssw0rd123"
      ```
    - **Notes**: Not currently active in this setup; requires IP specification for use.
@@ -67,7 +67,7 @@ These scripts:
    - **Target**: Ubuntu (template; adjust IP if used).
    - **Command**:
      ```bash
-     curl -O https://raw.githubusercontent.com/yourusername/rhel-ansible-k8s-it-support/main/remote_scripts/ubuntu_connect.sh
+     curl -O https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/remote_scripts/ubuntu_connect.sh
      chmod +x ubuntu_connect.sh
      sudo ./ubuntu_connect.sh
      ```
@@ -77,7 +77,7 @@ These scripts:
    - **Target**: Fedora CoreOS (template; adjust IP if used).
    - **Command**:
      ```bash
-     curl -O https://raw.githubusercontent.com/yourusername/rhel-ansible-k8s-it-support/main/remote_scripts/fedora_connect.sh
+     curl -O https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/remote_scripts/fedora_connect.sh
      chmod +x fedora_connect.sh
      sudo ./fedora_connect.sh
      ```
