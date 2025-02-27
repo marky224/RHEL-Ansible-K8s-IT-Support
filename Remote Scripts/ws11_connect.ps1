@@ -1,11 +1,11 @@
 # windows_connect.ps1
-# Configures Windows 11 Pro remote PC to connect to Ansible control node at 192.168.10.100 via WinRM
+# Configures Windows 11 Pro remote PC at 192.168.10.135 to connect to Ansible control node at 192.168.10.100 via WinRM
 
 param (
     [string]$ControlNodeIP = "192.168.10.100",  # Ansible control node IP
-    [string]$TargetIP = "",                     # Target Windows PC IP (customize when known)
-    [string]$Username = "admin",                # Windows admin user (customize as needed)
-    [string]$Password = "P@ssw0rd123",          # Windows admin password (customize/secure)
+    [string]$TargetIP = "192.168.10.135",       # Target Windows PC static IP
+    [string]$Username,                          # Windows admin user (prompted if not provided)
+    [string]$Password,                          # Windows admin password (prompted if not provided)
     [int]$CheckinPort = 8080                    # Port for check-in listener
 )
 
@@ -29,17 +29,48 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 }
 Add-Content -Path $logFile -Value "$(Get-Date) - Administrator privileges confirmed"
 
-# Validate target IP (if provided)
-if ($TargetIP) {
-    $currentIP = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -like '*Ethernet*' }).IPAddress
-    if ($currentIP -ne $TargetIP) {
-        Write-Error "Script intended for $TargetIP, but running on $currentIP"
-        Add-Content -Path $logFile -Value "$(Get-Date) - Error: IP mismatch: expected $TargetIP, got $currentIP"
+# Prompt for Username and Password if not provided
+if (-not $Username) {
+    $Username = Read-Host "Enter Windows admin username"
+    if (-not $Username) {
+        Write-Error "Username cannot be empty"
+        Add-Content -Path $logFile -Value "$(Get-Date) - Error: Username not provided"
         exit 1
     }
-    Add-Content -Path $logFile -Value "$(Get-Date) - IP validated: $currentIP"
+}
+Add-Content -Path $logFile -Value "$(Get-Date) - Username set to $Username"
+
+if (-not $Password) {
+    $securePassword = Read-Host "Enter Windows admin password" -AsSecureString
+    $Password = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword))
+    if (-not $Password) {
+        Write-Error "Password cannot be empty"
+        Add-Content -Path $logFile -Value "$(Get-Date) - Error: Password not provided"
+        exit 1
+    }
+}
+Add-Content -Path $logFile -Value "$(Get-Date) - Password provided (masked in logs)"
+
+# Validate and set static IP
+Write-Host "Validating and setting static IP $TargetIP..." -Verbose
+Add-Content -Path $logFile -Value "$(Get-Date) - Validating and setting static IP"
+$currentIP = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -like '*Ethernet*' }).IPAddress
+if ($currentIP -ne $TargetIP) {
+    try {
+        # Remove existing IP if different (avoids conflicts)
+        if ($currentIP) {
+            Remove-NetIPAddress -IPAddress $currentIP -InterfaceAlias "Ethernet" -Confirm:$false -ErrorAction Stop
+        }
+        # Set static IP
+        New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress $TargetIP -PrefixLength 24 -DefaultGateway "192.168.10.1" -ErrorAction Stop | Out-Null
+        Add-Content -Path $logFile -Value "$(Get-Date) - Static IP set to $TargetIP"
+    } catch {
+        Write-Error "Failed to set static IP $TargetIP : $_"
+        Add-Content -Path $logFile -Value "$(Get-Date) - Error: Static IP configuration failed: $_"
+        exit 1
+    }
 } else {
-    Add-Content -Path $logFile -Value "$(Get-Date) - Warning: No target IP specified; running on current machine"
+    Add-Content -Path $logFile -Value "$(Get-Date) - IP already set to $TargetIP"
 }
 
 # Configure WinRM
@@ -74,12 +105,11 @@ Add-Content -Path $logFile -Value "$(Get-Date) - Firewall rule added for WinRM"
 Write-Host "Sending check-in to control node..." -Verbose
 Add-Content -Path $logFile -Value "$(Get-Date) - Sending check-in"
 $hostname = $env:COMPUTERNAME
-$ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -like '*Ethernet*' }).IPAddress
-$body = "hostname=$hostname&ip=$ip&os=windows11"
+$body = "hostname=$hostname&ip=$TargetIP&os=windows11"
 $checkinUrl = "https://$ControlNodeIP:$CheckinPort/checkin"
 for ($i = 1; $i -le 3; $i++) {
     try {
-        # Using --insecure for self-signed cert; replace with proper cert in production
+        # Using -SkipCertificateCheck for self-signed cert; replace with proper cert in production
         Invoke-WebRequest -Uri $checkinUrl -Method POST -Body $body -UseBasicParsing -SkipCertificateCheck -ErrorAction Stop
         Add-Content -Path $logFile -Value "$(Get-Date) - Check-in successful on attempt $i"
         break
@@ -96,5 +126,5 @@ for ($i = 1; $i -le 3; $i++) {
 }
 
 # Completion message
-Write-Host "Windows 11 Pro PC configured for Ansible control at $ControlNodeIP" -Verbose
+Write-Host "Windows 11 Pro PC at $TargetIP configured for Ansible control at $ControlNodeIP" -Verbose
 Add-Content -Path $logFile -Value "$(Get-Date) - Configuration completed successfully"
