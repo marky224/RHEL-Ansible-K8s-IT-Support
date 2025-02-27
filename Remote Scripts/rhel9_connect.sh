@@ -1,5 +1,6 @@
 #!/bin/bash
 # Configures RHEL 9 workstation at 192.168.10.134 for Ansible management via SSH
+# Uses initial SSH to bootstrap CA certificate from control node
 
 # Variables
 CONTROL_NODE="192.168.10.100"
@@ -11,15 +12,27 @@ DNS2="8.8.4.4"
 LOG_FILE="/var/log/ansible_connect.log"
 SSH_KEY_URL="https://$CONTROL_NODE:8080/ssh_key"
 CHECKIN_URL="https://$CONTROL_NODE:8080/checkin"
-CA_CERT="/etc/pki/tls/certs/control_node_ca.crt"  # Adjust path if CA cert is pre-installed
+CA_CERT="/etc/pki/tls/certs/control_node_ca.crt"
+CONTROL_NODE_CA_PATH="/etc/pki/tls/certs/control_node_ca.crt"  # Path on control node
+TIMEOUT=30  # Timeout in seconds for network operations
 
 # Function to log messages with timestamp
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
 }
 
+# Rotate logs if larger than 10MB
+rotate_logs() {
+    if [ -f "$LOG_FILE" ] && [ $(stat -c%s "$LOG_FILE") -gt 10485760 ]; then
+        mv "$LOG_FILE" "${LOG_FILE}.$(date '+%Y%m%d%H%M%S')"
+        touch "$LOG_FILE" && chmod 644 "$LOG_FILE"
+        log "Log file rotated due to size exceeding 10MB."
+    fi
+}
+
 # Ensure log file exists and is writable
 touch "$LOG_FILE" 2>/dev/null || { sudo touch "$LOG_FILE" && sudo chmod 644 "$LOG_FILE"; }
+rotate_logs
 log "Starting RHEL 9 configuration for Ansible management..."
 
 # Check for root privileges
@@ -28,11 +41,54 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Prompt for dynamic access token (for production security)
-read -sp "Enter access token for $CONTROL_NODE: " ACCESS_TOKEN
+# Verify RHEL 9
+if ! grep -q "Red Hat Enterprise Linux 9" /etc/os-release; then
+    log "Error: This script is designed for RHEL 9 only."
+    exit 2
+fi
+
+# Prompt for control node SSH credentials
+log "Bootstrapping CA certificate via SSH from $CONTROL_NODE..."
+read -p "Enter SSH username for $CONTROL_NODE (e.g., root): " CONTROL_USER
+if [ -z "$CONTROL_USER" ]; then
+    log "Error: SSH username required."
+    exit 1
+fi
+
+# Check if CA cert exists on control node
+log "Verifying CA certificate existence on $CONTROL_NODE..."
+if ! ssh -o ConnectTimeout=10 "$CONTROL_USER@$CONTROL_NODE" "test -f $CONTROL_NODE_CA_PATH"; then
+    log "Error: CA certificate not found at $CONTROL_NODE_CA_PATH on $CONTROL_NODE."
+    log "Please ensure the certificate exists or update CONTROL_NODE_CA_PATH in the script."
+    exit 1
+fi
+log "CA certificate confirmed at $CONTROL_NODE_CA_PATH."
+log "You will be prompted for the password of $CONTROL_USER@$CONTROL_NODE to copy the CA certificate."
+
+# Fetch CA certificate via SCP
+if [ ! -f "$CA_CERT" ]; then
+    scp -o ConnectTimeout=10 "$CONTROL_USER@$CONTROL_NODE:$CONTROL_NODE_CA_PATH" "$CA_CERT" || {
+        log "Error: Failed to copy CA certificate from $CONTROL_NODE."
+        log "Run manually: scp -o ConnectTimeout=10 $CONTROL_USER@$CONTROL_NODE:$CONTROL_NODE_CA_PATH $CA_CERT"
+        exit 1
+    }
+    chmod 644 "$CA_CERT"
+    # Validate CA cert is a PEM file
+    if ! grep -q "-----BEGIN CERTIFICATE-----" "$CA_CERT"; then
+        log "Error: $CA_CERT is not a valid PEM certificate."
+        rm -f "$CA_CERT"
+        exit 1
+    fi
+    log "CA certificate copied to $CA_CERT and validated."
+else
+    log "CA certificate already exists at $CA_CERT. Skipping SCP."
+fi
+
+# Prompt for dynamic access token for HTTPS endpoints
+read -sp "Enter access token for $CONTROL_NODE HTTPS endpoints: " ACCESS_TOKEN
 echo
 if [ -z "$ACCESS_TOKEN" ]; then
-    log "Error: Access token required for secure connection."
+    log "Error: Access token required for secure HTTPS communication."
     exit 1
 fi
 
@@ -89,21 +145,13 @@ firewall-cmd --permanent --add-service=ssh && firewall-cmd --reload || {
     exit 1
 }
 
-# Set up SSH key exchange with token and certificate validation
+# Set up SSH key exchange with certificate validation
 log "Fetching SSH public key from $SSH_KEY_URL..."
 mkdir -p /root/.ssh && chmod 700 /root/.ssh
-if [ -f "$CA_CERT" ]; then
-    curl -s --cacert "$CA_CERT" --header "Authorization: Bearer $ACCESS_TOKEN" "$SSH_KEY_URL" >> /root/.ssh/authorized_keys || {
-        log "Error: Failed to fetch SSH key from $CONTROL_NODE with certificate validation."
-        exit 1
-    }
-else
-    log "Warning: CA certificate not found at $CA_CERT. Skipping validation (testing mode)..."
-    curl -k -s --header "Authorization: Bearer $ACCESS_TOKEN" "$SSH_KEY_URL" >> /root/.ssh/authorized_keys || {
-        log "Error: Failed to fetch SSH key from $CONTROL_NODE."
-        exit 1
-    }
-fi
+curl -s --cacert "$CA_CERT" --connect-timeout "$TIMEOUT" --header "Authorization: Bearer $ACCESS_TOKEN" "$SSH_KEY_URL" >> /root/.ssh/authorized_keys || {
+    log "Error: Failed to fetch SSH key from $CONTROL_NODE with certificate validation."
+    exit 1
+}
 chmod 600 /root/.ssh/authorized_keys
 log "SSH key added to /root/.ssh/authorized_keys."
 
@@ -113,17 +161,10 @@ HOSTNAME=$(hostname)
 OS="rhel9"
 CHECKIN_DATA="hostname=$HOSTNAME&ip=$IP_ADDRESS&os=$OS"
 for attempt in {1..3}; do
-    if [ -f "$CA_CERT" ]; then
-        curl -s --cacert "$CA_CERT" --header "Authorization: Bearer $ACCESS_TOKEN" --data "$CHECKIN_DATA" "$CHECKIN_URL" && {
-            log "Check-in successful."
-            break
-        }
-    else
-        curl -k -s --header "Authorization: Bearer $ACCESS_TOKEN" --data "$CHECKIN_DATA" "$CHECKIN_URL" && {
-            log "Check-in successful."
-            break
-        }
-    fi
+    curl -s --cacert "$CA_CERT" --connect-timeout "$TIMEOUT" --header "Authorization: Bearer $ACCESS_TOKEN" --data "$CHECKIN_DATA" "$CHECKIN_URL" && {
+        log "Check-in successful."
+        break
+    }
     log "Check-in attempt $attempt failed. Retrying in 5 seconds..."
     sleep 5
 done
