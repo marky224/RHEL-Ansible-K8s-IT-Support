@@ -28,5 +28,75 @@ These scripts:
 - **Control Node**: RHEL 9 server at `192.168.10.100` with:
   - `scripts/checkin_listener.py` running with HTTPS (`python3 scripts/checkin_listener.py &`).
   - `scripts/ssh_key_server.py` running with HTTPS (`python3 scripts/ssh_key_server.py &`).
-- **Network**: Remote PCs on the `192.168.10.0/24` subnet (e.g., VMware Workstation NAT or Bridged) with internet access.
-- **Permissions**: Root privileges on Linux (e.g., `root` on RHEL 9 workstation); Administrator on Windows
+- **Network**: Remote PCs on the `192.168.10.0/24` subnet (e.g., VMware Workstation NAT or Bridged network) with internet access.
+- **Permissions**: Root privileges on Linux (e.g., `root` user on RHEL 9 workstation); Administrator privileges on Windows.
+- **Red Hat Subscription**: Required for RHEL 9 package updates on the workstation.
+
+---
+
+### Usage Instructions
+
+#### General Steps
+1. **Download**: Fetch scripts from GitHub using `curl` (Linux) or `Invoke-WebRequest` (Windows).
+2. **Make Executable** (Linux): `chmod +x <script_name>`.
+3. **Run**: Execute with `sudo` (Linux) or as Administrator (Windows).
+4. **Check Logs**: Review `/var/log/ansible_connect.log` (Linux) or `C:\ansible_connect.log` (Windows) for setup details.
+
+#### Specific Instructions
+
+1. **`rhel9_connect.sh`**
+   - **Target**: RHEL 9 workstation at `192.168.10.134`.
+   - **Command**:
+     ```bash
+     curl -O https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/remote_scripts/rhel9_connect.sh
+     chmod +x rhel9_connect.sh
+     sudo ./rhel9_connect.sh
+     ```
+   - **Notes**: Validates the workstation’s IP (`192.168.10.134`) and requires a Red Hat subscription for updates. Fetches the control node’s SSH key over HTTPS.
+
+2. **`windows_connect.ps1`**
+   - **Target**: Windows 11 Pro (template; adjust IP if used).
+   - **Command**:
+     ```powershell
+     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/remote_scripts/windows_connect.ps1" -OutFile "windows_connect.ps1"
+     .\windows_connect.ps1 -ControlNodeIP "192.168.10.100"
+     ```
+   - **Notes**: Prompts for username and password interactively at runtime (e.g., "Enter the Windows admin username"). Not currently active in this setup; requires IP specification for use. Uses HTTPS for check-in with a self-signed certificate (testing mode).
+
+3. **`ubuntu_connect.sh`**
+   - **Target**: Ubuntu (template; adjust IP if used).
+   - **Command**:
+     ```bash
+     curl -O https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/remote_scripts/ubuntu_connect.sh
+     chmod +x ubuntu_connect.sh
+     sudo ./ubuntu_connect.sh
+     ```
+   - **Notes**: Not currently active; intended for future Ubuntu PCs. Assumes a default Ubuntu user; adjust `$USER` if different.
+
+4. **`fedora_connect.sh`**
+   - **Target**: Fedora CoreOS (template; adjust IP if used).
+   - **Command**:
+     ```bash
+     curl -O https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/remote_scripts/fedora_connect.sh
+     chmod +x fedora_connect.sh
+     sudo ./fedora_connect.sh
+     ```
+   - **Notes**: Not currently active; assumes SSH is enabled via Ignition. May require a reboot if `curl` is installed.
+
+---
+
+### Enhancements
+
+#### Automated SSH Key Exchange
+- **How**: The `rhel9_connect.sh` script fetches the control node’s public key from `https://192.168.10.100:8080/ssh_key` and adds it to `/root/.ssh/authorized_keys` on the workstation.
+- **Setup**: Ensure `scripts/ssh_key_server.py` is running with HTTPS on the control node.
+
+#### Improved Error Handling and Logging
+- **Error Handling**: Validates IPs, exits on critical failures with specific messages, and retries check-ins 3 times with 5-second delays.
+- **Logging**: Records actions and errors with timestamps to `/var/log/ansible_connect.log` (Linux) or `C:\ansible_connect.log` (Windows).
+- **Windows Interactivity**: `windows_connect.ps1` prompts for username and password if not provided, enhancing security by avoiding hardcoded credentials.
+
+---
+
+### Post-Execution
+- **Verify**: Check `logs/checkin.log` on the control node at `192.168.10.100` for entries like:
