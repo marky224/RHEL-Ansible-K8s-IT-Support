@@ -3,16 +3,15 @@
 
 # Variables
 CONTROL_NODE="192.168.10.100"
-INTERFACE="eth0"  # Adjust if different (e.g., enp0s3)
 IP_ADDRESS="192.168.10.134"
 SUBNET_MASK="24"  # 255.255.255.0 in CIDR
 GATEWAY="192.168.10.1"
 DNS1="8.8.8.8"
 DNS2="8.8.4.4"
-CONNECTION_NAME="Wired connection 1"  # Adjust if different
 LOG_FILE="/var/log/ansible_connect.log"
 SSH_KEY_URL="https://$CONTROL_NODE:8080/ssh_key"
 CHECKIN_URL="https://$CONTROL_NODE:8080/checkin"
+CA_CERT="/etc/pki/tls/certs/control_node_ca.crt"  # Adjust path if CA cert is pre-installed
 
 # Function to log messages with timestamp
 log() {
@@ -29,11 +28,31 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Verify interface exists
-if ! ip link show "$INTERFACE" > /dev/null 2>&1; then
-    log "Error: Interface $INTERFACE not found. Update INTERFACE variable."
+# Prompt for dynamic access token (for production security)
+read -sp "Enter access token for $CONTROL_NODE: " ACCESS_TOKEN
+echo
+if [ -z "$ACCESS_TOKEN" ]; then
+    log "Error: Access token required for secure connection."
     exit 1
 fi
+
+# Dynamically detect active interface
+log "Detecting active network interface..."
+INTERFACE=$(ip link | grep -E '^[0-9]+: ' | grep -v 'lo:' | grep 'state UP' | awk -F: '{print $2}' | tr -d ' ' | head -n 1)
+if [ -z "$INTERFACE" ]; then
+    log "Error: No active network interface found."
+    exit 1
+fi
+log "Using interface: $INTERFACE"
+
+# Dynamically detect active connection name
+log "Detecting active NetworkManager connection..."
+CONNECTION_NAME=$(nmcli con show --active | grep "$INTERFACE" | awk '{print $1}' | head -n 1)
+if [ -z "$CONNECTION_NAME" ]; then
+    log "Error: No active NetworkManager connection found for $INTERFACE."
+    exit 1
+fi
+log "Using connection name: $CONNECTION_NAME"
 
 # Set static IP
 log "Setting static IP to $IP_ADDRESS..."
@@ -70,13 +89,21 @@ firewall-cmd --permanent --add-service=ssh && firewall-cmd --reload || {
     exit 1
 }
 
-# Set up SSH key exchange
+# Set up SSH key exchange with token and certificate validation
 log "Fetching SSH public key from $SSH_KEY_URL..."
 mkdir -p /root/.ssh && chmod 700 /root/.ssh
-curl -k -s "$SSH_KEY_URL" >> /root/.ssh/authorized_keys || {
-    log "Error: Failed to fetch SSH key from $CONTROL_NODE."
-    exit 1
-}
+if [ -f "$CA_CERT" ]; then
+    curl -s --cacert "$CA_CERT" --header "Authorization: Bearer $ACCESS_TOKEN" "$SSH_KEY_URL" >> /root/.ssh/authorized_keys || {
+        log "Error: Failed to fetch SSH key from $CONTROL_NODE with certificate validation."
+        exit 1
+    }
+else
+    log "Warning: CA certificate not found at $CA_CERT. Skipping validation (testing mode)..."
+    curl -k -s --header "Authorization: Bearer $ACCESS_TOKEN" "$SSH_KEY_URL" >> /root/.ssh/authorized_keys || {
+        log "Error: Failed to fetch SSH key from $CONTROL_NODE."
+        exit 1
+    }
+fi
 chmod 600 /root/.ssh/authorized_keys
 log "SSH key added to /root/.ssh/authorized_keys."
 
@@ -86,10 +113,17 @@ HOSTNAME=$(hostname)
 OS="rhel9"
 CHECKIN_DATA="hostname=$HOSTNAME&ip=$IP_ADDRESS&os=$OS"
 for attempt in {1..3}; do
-    curl -k -s --data "$CHECKIN_DATA" "$CHECKIN_URL" && {
-        log "Check-in successful."
-        break
-    }
+    if [ -f "$CA_CERT" ]; then
+        curl -s --cacert "$CA_CERT" --header "Authorization: Bearer $ACCESS_TOKEN" --data "$CHECKIN_DATA" "$CHECKIN_URL" && {
+            log "Check-in successful."
+            break
+        }
+    else
+        curl -k -s --header "Authorization: Bearer $ACCESS_TOKEN" --data "$CHECKIN_DATA" "$CHECKIN_URL" && {
+            log "Check-in successful."
+            break
+        }
+    fi
     log "Check-in attempt $attempt failed. Retrying in 5 seconds..."
     sleep 5
 done
