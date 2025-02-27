@@ -115,6 +115,8 @@ These scripts:
 #### Troubleshooting: Review logs on the remote PC for detailed errors:
   ```Linux:
   /var/log/ansible_connect.log
+  ```
 
   ```Windows:
   C:\ansible_connect.log
+  ```
