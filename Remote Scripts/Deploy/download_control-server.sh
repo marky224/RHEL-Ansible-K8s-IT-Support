@@ -1,0 +1,10 @@
+# Manually install on PC with internet access
+mkdir -p /root/rhel-ansible-k8s
+cd /root/rhel-ansible-k8s
+curl -O https://raw.githubusercontent.com/marky224/RHEL-Ansible-K8s-IT-Support/main/deploy/control-server.sh
+mkdir scripts
+cd scripts
+curl -O https://raw.githubusercontent.com/marky224/RHEL-Ansible-K8s-IT-Support/main/scripts/Dockerfile
+curl -O https://raw.githubusercontent.com/marky224/RHEL-Ansible-K8s-IT-Support/main/scripts/entrypoint.sh
+curl -O https://raw.githubusercontent.com/marky224/RHEL-Ansible-K8s-IT-Support/main/scripts/checkin_listener.py
+curl -O https://raw.githubusercontent.com/marky224/RHEL-Ansible-K8s-IT-Support/main/scripts/ssh_key_server.py
