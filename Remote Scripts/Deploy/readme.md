@@ -30,7 +30,7 @@ This folder supports the deployment of Ansible control nodes by:
      ```bash
      cd ~
      mkdir -p scripts
-     curl -O https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/Remote%20Scripts/Deploy/readme.md
+     curl -O https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/Remote%20Scripts/Deploy/control-server.sh
      chmod +x control-server.sh
      sudo ./control-server.sh
      ```
