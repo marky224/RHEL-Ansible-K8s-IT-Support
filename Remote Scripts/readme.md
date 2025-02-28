@@ -1,18 +1,18 @@
 # Remote Scripts
 
-Welcome to the `Remote Scripts` subfolder of the [RHEL-Ansible-K8s-IT-Support](https://github.com/marky224/RHEL-Ansible-K8s-IT-Support) project! This directory contains scripts to configure two remote nodes (one RHEL 9 workstation and one Windows VM), gather inventory details, set up an Ansible control node on RHEL 9, and deploy a Kubernetes cluster for advanced IT MSP production tools.
+Welcome to the `Remote Scripts` subfolder of the [RHEL-Ansible-K8s-IT-Support](https://github.com/marky224/RHEL-Ansible-K8s-IT-Support) project! This directory contains scripts to configure a RHEL 9 workstation and a Windows 11 Pro VM as Kubernetes worker nodes, set up an RHEL 9 server as the Ansible control node and Kubernetes control plane, and deploy a cluster for IT MSP production tools.
 
 ## Purpose
 
-These scripts configure a RHEL 9 workstation (IP: `192.168.10.134`) and a Windows VM (IP: `192.168.10.136`), gather inventory data, set up an Ansible control node, and deploy Kubernetes for MSP tools (e.g., monitoring, CI/CD). They’re:
-- **Simple**: Minimal steps, easy to use.
-- **Secure**: Manual key distribution for production quality.
-- **Focused**: Tailored for a two-VM setup.
+These scripts configure a RHEL 9 workstation (IP: `192.168.10.134`) and a Windows 11 Pro VM (IP: `192.168.10.136`) as Kubernetes workers, with an RHEL 9 server as the control plane, using Ansible for centralized deployment of MSP tools (e.g., monitoring, CI/CD). They’re:
+- **Simple**: Minimal worker setup, centralized control.
+- **Secure**: Manual key distribution, WinRM prep script.
+- **Scalable**: Easily add more Linux/Windows workers.
 
 ## Scripts
 
 ### 1. `configure_rhel9_node.sh`
-- **Description**: Configures the RHEL 9 workstation with static IP `192.168.10.134` and gathers inventory details.
+- **Description**: Configures the RHEL 9 workstation worker with static IP `192.168.10.134` and gathers inventory details.
 - **Features**: Dynamically detects interface, outputs details, sets network config.
 - **Usage**:
   1. Save as `configure_rhel9_node.sh` on the RHEL 9 VM.
@@ -28,10 +28,10 @@ These scripts configure a RHEL 9 workstation (IP: `192.168.10.134`) and a Window
      ```
 
 ### 2. `configure_windows_node.ps1`
-- **Description**: Configures the Windows VM with static IP `192.168.10.136` and gathers inventory details.
-- **Features**: Dynamically detects interface, outputs details, sets network config.
+- **Description**: Configures the Windows 11 Pro worker with static IP `192.168.10.136`, enables WinRM, and gathers inventory details.
+- **Features**: Dynamically detects interface, sets network config, prepares for Ansible.
 - **Usage**:
-  1. Save as `configure_windows_node.ps1` on the Windows VM.
+  1. Save as `configure_windows_node.ps1` on the Windows 11 Pro VM.
   2. Run as admin: `powershell -File configure_windows_node.ps1`.
   3. Example output:
      ```
@@ -42,82 +42,81 @@ These scripts configure a RHEL 9 workstation (IP: `192.168.10.134`) and a Window
      ```
 
 ### 3. `setup_ansible_control_rhel9.sh`
-- **Description**: Sets up an RHEL 9 server as an Ansible control node.
+- **Description**: Sets up an RHEL 9 server as the Ansible control node and Kubernetes control plane, preparing to join workers.
 - **Features**:
   - Installs Ansible and SSH client.
   - Creates `ansible` user and SSH key at `/home/ansible/.ssh/id_rsa`.
-  - Sets up `/etc/ansible/inventory.ini` and `/etc/ansible/ansible.cfg`.
+  - Sets up `/etc/ansible/inventory.ini`, `/etc/ansible/ansible.cfg`, and `deploy_kubernetes.yml`.
 - **Usage**:
   1. Save as `setup_ansible_control_rhel9.sh`.
   2. Make executable: `chmod +x setup_ansible_control_rhel9.sh`.
   3. Run: `sudo bash setup_ansible_control_rhel9.sh`.
-  4. Update inventory with RHEL 9 workstation details:
+  4. Update inventory with RHEL 9 and Windows details:
      ```ini
-     [prod]
+     [control]
+     localhost ansible_connection=local
+
+     [workers]
      workstation1.example.com ansible_host=192.168.10.134
+     WIN11-TEST ansible_host=192.168.10.136 ansible_connection=winrm ansible_user=Administrator ansible_password=your_password ansible_winrm_transport=ntlm ansible_port=5985 ansible_winrm_scheme=http
 
-     [prod:vars]
-     ansible_user = ansible-user
+     [all:vars]
      ansible_ssh_private_key_file = /home/ansible/.ssh/id_rsa
+     ansible_user = ansible-user  # For RHEL
      ```
-
-### 4. `deploy_kubernetes_rhel9.sh`
-- **Description**: Deploys a Kubernetes cluster on the control node and RHEL 9 workstation.
-- **Features**: Installs `containerd`, `kubeadm`, joins the cluster.
-- **Usage**:
-  1. Run after `setup_ansible_control_rhel9.sh`.
-  2. Save as `deploy_kubernetes_rhel9.sh`.
-  3. Make executable: `chmod +x deploy_kubernetes_rhel9.sh`.
-  4. Run: `sudo bash deploy_kubernetes_rhel9.sh`.
-  5. Verify: `sudo -u ansible kubectl --kubeconfig=/home/ansible/.kube/config get nodes`.
 
 ## Prerequisites
 
-- **Control Node**: RHEL 9 server, 2 CPUs, 2 GB RAM.
-- **Remote Nodes**: 
-  - 1 RHEL 9 workstation (IP: `192.168.10.134`), 2 GB RAM.
-  - 1 Windows VM (IP: `192.168.10.136`, optional).
-- **Network**: Control node must reach VMs on port 22 (RHEL) and Kubernetes ports (e.g., 6443).
-- **User**: `ansible-user` with `sudo` on RHEL 9 VM.
+- **Control Node**: RHEL 9 server (control plane), 2 CPUs, 2 GB RAM.
+- **Worker Nodes**: 
+  - RHEL 9 workstation (IP: `192.168.10.134`), 2 GB RAM.
+  - Windows 11 Pro VM (IP: `192.168.10.136`), Hyper-V enabled, 2 GB RAM.
+- **Network**: Control node must reach RHEL on port 22 (SSH), Windows on 5985 (WinRM), and Kubernetes ports (e.g., 6443).
+- **User**: `ansible-user` with `sudo` on RHEL; admin on Windows with password supplied in inventory.
 
 ## Setup Instructions
 
 1. **Prepare Environment**:
-   - Boot 1 RHEL 9 control node VM.
-   - Boot 1 RHEL 9 workstation VM and 1 Windows VM.
-   - Ensure SSH is enabled on RHEL 9: `sudo systemctl enable --now sshd`.
+   - Boot 1 RHEL 9 server VM (control plane).
+   - Boot 1 RHEL 9 workstation VM and 1 Windows 11 Pro VM (workers).
+   - Enable SSH on RHEL: `sudo systemctl enable --now sshd`.
 
-2. **Configure Remote Nodes**:
-   - **RHEL 9 Workstation**:
-     - Copy: `scp configure_rhel9_node.sh root@<current_ip>:/root/`.
-     - Run: `ssh root@<current_ip> "bash configure_rhel9_node.sh"`.
-     - Record hostname and confirm IP `192.168.10.134`.
-   - **Windows VM**:
-     - Copy `configure_windows_node.ps1` via RDP.
-     - Run: `powershell -File configure_windows_node.ps1`.
-     - Confirm IP `192.168.10.136`.
+2. **Configure RHEL 9 Workstation Worker**:
+   - Copy: `scp configure_rhel9_node.sh root@<current_ip>:/root/`.
+   - Run: `ssh root@<current_ip> "bash configure_rhel9_node.sh"`.
+   - Record hostname and confirm IP `192.168.10.134`.
 
-3. **Configure Control Node**:
+3. **Configure Windows 11 Pro Worker**:
+   - Copy `configure_windows_node.ps1` to the Windows VM (e.g., via RDP).
+   - Run as admin: `powershell -File configure_windows_node.ps1`.
+   - Confirm IP `192.168.10.136` and WinRM enabled.
+
+4. **Configure Control Node**:
    - Clone: `git clone https://github.com/marky224/RHEL-Ansible-K8s-IT-Support.git`.
    - Navigate: `cd RHEL-Ansible-K8s-IT-Support/Remote\ Scripts`.
    - Run: `sudo bash setup_ansible_control_rhel9.sh`.
-   - Update `/etc/ansible/inventory.ini` with RHEL 9 workstation hostname.
+   - Update `/etc/ansible/inventory.ini` with RHEL hostname and Windows admin password.
 
-4. **Distribute SSH Key (RHEL Only)**:
+5. **Distribute SSH Key (RHEL Worker Only)**:
    - Run: `sudo -u ansible ssh-copy-id -i /home/ansible/.ssh/id_rsa.pub ansible-user@192.168.10.134`.
 
-5. **Deploy Kubernetes**:
-   - Run: `sudo bash deploy_kubernetes_rhel9.sh`.
+6. **Deploy Kubernetes**:
+   - Run: `sudo -u ansible ansible-playbook /etc/ansible/playbooks/deploy_kubernetes.yml`.
    - Verify: `sudo -u ansible kubectl --kubeconfig=/home/ansible/.kube/config get nodes`.
 
-6. **Deploy MSP Tools**:
+7. **Add More Workers (Future)**:
+   - For RHEL: Reuse `configure_rhel9_node.sh` with a new IP, add to `[workers]` in inventory.
+   - For Windows: Reuse `configure_windows_node.ps1`, add to `[workers]` with WinRM settings.
+
+8. **Deploy MSP Tools**:
    - Use `kubectl` to deploy tools on the cluster.
 
 ## Best Practices
 
-- **Security**: Secure SSH key; use Kubernetes RBAC.
-- **Order**: Configure remote nodes first for accurate inventory.
-- **Validation**: Test SSH and IPs before proceeding.
+- **Separation**: Distinct worker scripts simplify scaling.
+- **Centralized Deployment**: Ansible manages Kubernetes across nodes.
+- **Security**: Supply Windows password in inventory; use HTTPS WinRM in production.
+- **Validation**: Test connectivity and node status post-deployment.
 
 ## Contributing
 
