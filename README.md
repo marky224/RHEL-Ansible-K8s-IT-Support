@@ -1,7 +1,7 @@
 # RHEL Ansible + Kubernetes Infrastructure for IT Support
 
 ## Overview
-This project establishes a **Red Hat Enterprise Linux (RHEL) 9** virtual machine as a control node, leveraging **Ansible** for configuration management and **Kubernetes** for container orchestration to support IT operations for Large Interntal IT teams and/or Managed Service Providers (MSPs). It manages a fleet of remote PCs—**Linux**, and **Windows**—providing tools for monitoring, ticketing, and system administration.
+This project establishes a **Red Hat Enterprise Linux (RHEL) 9** virtual machine as a control node, leveraging **Ansible** for configuration management and **Kubernetes** for container orchestration to support IT operations for large interntal IT teams and/or Managed Service Providers (MSPs). It manages a fleet of remote PCs—**Linux**, and **Windows**—providing tools for monitoring, ticketing, and system administration.
 
 ### Features
 - **Ansible Control Node**: Manages remote PCs via SSH (Linux) and WinRM (Windows).
