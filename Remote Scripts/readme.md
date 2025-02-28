@@ -16,9 +16,8 @@ These scripts configure a RHEL 9 workstation (IP: `192.168.10.134`) and a Window
 - **Features**: Dynamically detects interface, outputs details, sets network config.
 - **Usage**:
   1. Save as `config_rhel9_node.sh` on the RHEL 9 VM.
-  2. Make executable: `chmod +x config_rhel9_node.sh`.
-  3. Run as root: `sudo ./config_rhel9_node.sh`.
-  4. Example output:
+  2. Copy and paste code into 'Terminal' and execute.
+  3. Example output:
      ```
      Hostname: workstation1.example.com
      IP: 192.168.10.134
