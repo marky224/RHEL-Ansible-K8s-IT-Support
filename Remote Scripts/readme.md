@@ -32,7 +32,7 @@ These scripts configure a RHEL 9 workstation (IP: `192.168.10.134`) and a Window
 - **Features**: Dynamically detects interface, sets network config, prepares for Ansible.
 - **Usage**:
   1. Save as `config_windows_node.ps1` on the Windows 11 Pro VM.
-  2. Run as admin: `powershell -File config_windows_node.ps1`.
+  2. Run as admin: `powershell -ExecutionPolicy Bypass -File .\configure_windows_node.ps1`.
   3. Example output:
      ```
      Hostname: WIN11-TEST
