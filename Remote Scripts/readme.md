@@ -11,13 +11,13 @@ These scripts configure a RHEL 9 workstation (IP: `192.168.10.134`) and a Window
 
 ## Scripts
 
-### 1. `configure_rhel9_node.sh`
+### 1. `config_rhel9_node.sh`
 - **Description**: Configures the RHEL 9 workstation worker with static IP `192.168.10.134` and gathers inventory details.
 - **Features**: Dynamically detects interface, outputs details, sets network config.
 - **Usage**:
-  1. Save as `configure_rhel9_node.sh` on the RHEL 9 VM.
-  2. Make executable: `chmod +x configure_rhel9_node.sh`.
-  3. Run as root: `sudo ./configure_rhel9_node.sh`.
+  1. Save as `config_rhel9_node.sh` on the RHEL 9 VM.
+  2. Make executable: `chmod +x config_rhel9_node.sh`.
+  3. Run as root: `sudo ./config_rhel9_node.sh`.
   4. Example output:
      ```
      Hostname: workstation1.example.com
@@ -27,12 +27,12 @@ These scripts configure a RHEL 9 workstation (IP: `192.168.10.134`) and a Window
      SSH Port: 22
      ```
 
-### 2. `configure_windows_node.ps1`
+### 2. `config_windows_node.ps1`
 - **Description**: Configures the Windows 11 Pro worker with static IP `192.168.10.136`, enables WinRM, and gathers inventory details.
 - **Features**: Dynamically detects interface, sets network config, prepares for Ansible.
 - **Usage**:
-  1. Save as `configure_windows_node.ps1` on the Windows 11 Pro VM.
-  2. Run as admin: `powershell -File configure_windows_node.ps1`.
+  1. Save as `config_windows_node.ps1` on the Windows 11 Pro VM.
+  2. Run as admin: `powershell -File config_windows_node.ps1`.
   3. Example output:
      ```
      Hostname: WIN11-TEST
@@ -82,13 +82,13 @@ These scripts configure a RHEL 9 workstation (IP: `192.168.10.134`) and a Window
    - Enable SSH on RHEL: `sudo systemctl enable --now sshd`.
 
 2. **Configure RHEL 9 Workstation Worker**:
-   - Copy: `scp configure_rhel9_node.sh root@<current_ip>:/root/`.
-   - Run: `ssh root@<current_ip> "bash configure_rhel9_node.sh"`.
+   - Copy: `scp config_rhel9_node.sh root@<current_ip>:/root/`.
+   - Run: `ssh root@<current_ip> "bash config_rhel9_node.sh"`.
    - Record hostname and confirm IP `192.168.10.134`.
 
 3. **Configure Windows 11 Pro Worker**:
-   - Copy `configure_windows_node.ps1` to the Windows VM (e.g., via RDP).
-   - Run as admin: `powershell -File configure_windows_node.ps1`.
+   - Copy `config_windows_node.ps1` to the Windows VM (e.g., via RDP).
+   - Run as admin: `powershell -File config_windows_node.ps1`.
    - Confirm IP `192.168.10.136` and WinRM enabled.
 
 4. **Configure Control Node**:
@@ -105,8 +105,8 @@ These scripts configure a RHEL 9 workstation (IP: `192.168.10.134`) and a Window
    - Verify: `sudo -u ansible kubectl --kubeconfig=/home/ansible/.kube/config get nodes`.
 
 7. **Add More Workers (Future)**:
-   - For RHEL: Reuse `configure_rhel9_node.sh` with a new IP, add to `[workers]` in inventory.
-   - For Windows: Reuse `configure_windows_node.ps1`, add to `[workers]` with WinRM settings.
+   - For RHEL: Reuse `config_rhel9_node.sh` with a new IP, add to `[workers]` in inventory.
+   - For Windows: Reuse `config_windows_node.ps1`, add to `[workers]` with WinRM settings.
 
 8. **Deploy MSP Tools**:
    - Use `kubectl` to deploy tools on the cluster.
