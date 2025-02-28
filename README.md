@@ -20,11 +20,10 @@ This project establishes a **Red Hat Enterprise Linux (RHEL) 9** virtual machine
 ### Setup Instructions
 1. **Deploy Control Node**:
    - Server: `./deploy/control-server.sh` (installs RHEL 9, Ansible, Kubernetes).
-   - Workstation: `./deploy/control-workstation.sh` (configures existing RHEL 9 workstation).
 2. **Configure Remote PCs**:
    - Download and run scripts from `remote_scripts/`:
      ```bash
-     curl -O https://raw.githubusercontent.com/yourusername/rhel-ansible-k8s-it-support/main/remote_scripts/<script_name>
+     curl -O https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/remote_scripts/<script_name>
      ```
    - See [Remote PC Setup](#remote-pc-setup).
 3. **Run MSP Tools**:
