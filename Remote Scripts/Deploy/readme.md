@@ -28,7 +28,10 @@ This folder supports the deployment of Ansible control nodes by:
    - **Target**: RHEL 9 server (e.g., `192.168.10.100` or a new IP like `192.168.10.102`).
    - **Command**:
      ```bash
-     curl -O https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/Remote%20Scripts/Deploy/control-server.sh
+     cd ~
+     mkdir -p scripts
+     cd ~/Downloads
+     curl -O https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/remote_scripts/control-server.sh
      chmod +x control-server.sh
      sudo ./control-server.sh
      ```
