@@ -11,7 +11,7 @@ This project establishes a **Red Hat Enterprise Linux (RHEL) 9** virtual machine
 
 ### Prerequisites
 - **Control Node**:
-  - RHEL 9 VM in VMware Workstation (4GB+ RAM, 2 CPUs, 20GB+ disk).
+  - RHEL 9 VM in VMware Workstation (4GB+ RAM, 4+ CPU Cores, 50GB+ disk).
   - Red Hat subscription for RHEL/Ansilbe repositories.
 - **Remote PCs**:
   - RHEL 9, Windows 11 Pro VMs on the same subnet (e.g., `192.168.X.0/24`).
