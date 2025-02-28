@@ -82,18 +82,18 @@ These scripts configure a RHEL 9 workstation (IP: `192.168.10.134`) and a Window
    - Enable SSH on RHEL: `sudo systemctl enable --now sshd`.
 
 2. **Configure RHEL 9 Workstation Worker**:
-   - Copy: `scp config_rhel9_node.sh root@<current_ip>:/root/`.
-   - Run: `ssh root@<current_ip> "bash config_rhel9_node.sh"`.
+   - Download `config_rhel9_node.sh` to the Linux VM.
+   - Copy and paste code into 'Terminal', execute from there.
    - Record hostname and confirm IP `192.168.10.134`.
 
 3. **Configure Windows 11 Pro Worker**:
-   - Copy `config_windows_node.ps1` to the Windows VM (e.g., via RDP).
+   - Download `config_windows_node.ps1` to the Windows VM.
    - Run as admin: `powershell -File config_windows_node.ps1`.
-   - Confirm IP `192.168.10.136` and WinRM enabled.
+   - Record hostname, confirm IP `192.168.10.136` and WinRM enabled.
 
 4. **Configure Control Node**:
    - Clone: `git clone https://github.com/marky224/RHEL-Ansible-K8s-IT-Support.git`.
-   - Navigate: `cd RHEL-Ansible-K8s-IT-Support/Remote\ Scripts`.
+   - Navigate: `cd 'RHEL-Ansible-K8s-IT-Support/Remote Scripts'`.
    - Run: `sudo bash setup_ansible_control_rhel9.sh`.
    - Update `/etc/ansible/inventory.ini` with RHEL hostname and Windows admin password.
 
