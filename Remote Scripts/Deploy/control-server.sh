@@ -11,7 +11,7 @@ CA_CERT="/etc/pki/tls/certs/control_node_ca.crt"
 CA_KEY="/etc/pki/tls/private/control_node_ca.key"
 TIMEOUT=30  # Timeout in seconds for network operations
 SCRIPTS_DIR="/usr/local/bin"
-GITHUB_REPO="https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/main/scripts"
+GITHUB_REPO="https://raw.githubusercontent.com/marky224/rhel-ansible-k8s-it-support/Remote%20Scripts/Deploy"
 DOCKER_IMAGE="ansible-control-services:latest"
 
 # Function to log messages with timestamp
