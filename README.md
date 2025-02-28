@@ -5,7 +5,7 @@ This project establishes a **Red Hat Enterprise Linux (RHEL) 9** virtual machine
 
 ### Features
 - **Ansible Control Node**: Manages remote PCs via SSH (Linux) and WinRM (Windows).
-- **Kubernetes Cluster**: Runs containerized MSP tools (e.g., Prometheus, Grafana, OSTicket) on the RHEL 9 control node.
+- **Kubernetes Cluster**: Runs containerized MSP tools (e.g., Prometheus, Grafana, OSTicket) on the control nodes.
 - **Remote PCs**: Supports diverse OSes for comprehensive IT management.
 - **Automation Scripts**: Simplifies deployment and connectivity setup.
 
