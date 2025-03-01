@@ -1,49 +1,62 @@
-# PowerShell script to configure Windows 11 Pro worker with static IP
-# Run as Administrator
+# Set-StaticIP-Dynamic.ps1
+# Script to dynamically configure static IP on Windows 11 Pro VM
 
-# Dynamically detect the first active non-loopback interface
-$interface = (Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.Name -notlike "*Loopback*" } | Select-Object -First 1).Name
-if (-not $interface) {
-    Write-Output "Error: No active non-loopback network interface found."
-    exit 1
+# Target IP address
+$TargetIPAddress = "192.168.10.136"
+
+try {
+    # Get the active network interface (assumes one primary connected adapter)
+    $Interface = Get-NetAdapter | 
+        Where-Object { $_.Status -eq "Up" -and $_.Name -like "Ethernet*" } | 
+        Select-Object -First 1
+    
+    if (-not $Interface) {
+        throw "No active Ethernet adapter found"
+    }
+    
+    $InterfaceAlias = $Interface.Name
+    
+    # Get current IP configuration
+    $IPConfig = Get-NetIPConfiguration -InterfaceAlias $InterfaceAlias
+    
+    # Gather existing network parameters
+    $DefaultGateway = $IPConfig.IPv4DefaultGateway.NextHop
+    $DNSServers = $IPConfig.DNSServer.ServerAddresses
+    $CurrentIP = Get-NetIPAddress -InterfaceAlias $InterfaceAlias -AddressFamily IPv4
+    $SubnetMaskBits = $CurrentIP.PrefixLength
+    
+    # Remove existing IP configuration
+    Remove-NetIPAddress -InterfaceAlias $InterfaceAlias -Confirm:$false
+    
+    # Set new static IP address with gathered parameters
+    New-NetIPAddress -InterfaceAlias $InterfaceAlias `
+        -IPAddress $TargetIPAddress `
+        -PrefixLength $SubnetMaskBits `
+        -DefaultGateway $DefaultGateway `
+        -ErrorAction Stop
+    
+    # Configure DNS servers
+    Set-DnsClientServerAddress -InterfaceAlias $InterfaceAlias `
+        -ServerAddresses $DNSServers `
+        -ErrorAction Stop
+    
+    # Verify configuration
+    $NewConfig = Get-NetIPConfiguration -InterfaceAlias $InterfaceAlias
+    Write-Host "New IP Configuration:"
+    $NewConfig | Format-List
+    
+    # Test connectivity
+    $PingTest = Test-NetConnection -ComputerName $DefaultGateway
+    if ($PingTest.PingSucceeded) {
+        Write-Host "Network connectivity confirmed" -ForegroundColor Green
+    } else {
+        Write-Warning "Gateway ping failed - please check network configuration"
+    }
+    
+} catch {
+    Write-Error "Configuration failed: $_"
+    Write-Host "Reverting to DHCP as fallback..."
+    Set-NetIPInterface -InterfaceAlias $InterfaceAlias -Dhcp Enabled
 }
 
-# Gather current info
-Write-Output "Current Configuration:"
-Write-Output "Hostname: $env:COMPUTERNAME"
-Write-Output "IP: $((Get-NetIPAddress -InterfaceAlias $interface -AddressFamily IPv4).IPAddress)"
-Write-Output "Gateway: $((Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Where-Object { $_.InterfaceAlias -eq $interface }).NextHop)"
-Write-Output "DNS Servers: $((Get-DnsClientServerAddress -InterfaceAlias $interface -AddressFamily IPv4).ServerAddresses -join ', ')"
-Write-Output "OS: $([System.Environment]::OSVersion.VersionString)"
-Write-Output "User: $env:USERNAME"
-
-# Set static IP to 192.168.10.136 with NAT gateway/DNS
-Write-Output "Setting static IP to 192.168.10.136 on interface $interface with gateway and DNS 192.168.10.1..."
-New-NetIPAddress -InterfaceAlias $interface -IPAddress 192.168.10.136 -PrefixLength 24 -DefaultGateway 192.168.10.1
-Set-DnsClientServerAddress -InterfaceAlias $interface -ServerAddresses "192.168.10.1"
-
-# Verify new configuration
-Write-Output "New Configuration:"
-Write-Output "Hostname: $env:COMPUTERNAME"
-Write-Output "IP: $((Get-NetIPAddress -InterfaceAlias $interface -AddressFamily IPv4).IPAddress)"
-Write-Output "Gateway: $((Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Where-Object { $_.InterfaceAlias -eq $interface }).NextHop)"
-Write-Output "DNS Servers: $((Get-DnsClientServerAddress -InterfaceAlias $interface -AddressFamily IPv4).ServerAddresses -join ', ')"
-Write-Output "OS: $([System.Environment]::OSVersion.VersionString)"
-Write-Output "User: $env:USERNAME"
-Write-Output "Static IP set to 192.168.10.136—verify connectivity with 'ping 192.168.10.1' and DNS with 'nslookup google.com'."
-
-# Enable OpenSSH Server
-Write-Output "Enabling OpenSSH Server for Ansible connectivity..."
-Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
-Start-Service sshd
-Set-Service sshd -StartupType Automatic
-
-# Verify new configuration
-Write-Output "New Configuration:"
-Write-Output "Hostname: $env:COMPUTERNAME"
-Write-Output "IP: $((Get-NetIPAddress -InterfaceAlias $interface -AddressFamily IPv4).IPAddress)"
-Write-Output "Gateway: $((Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Where-Object { $_.InterfaceAlias -eq $interface }).NextHop)"
-Write-Output "DNS Servers: $((Get-DnsClientServerAddress -InterfaceAlias $interface -AddressFamily IPv4).ServerAddresses -join ', ')"
-Write-Output "OS: $([System.Environment]::OSVersion.VersionString)"
-Write-Output "User: $env:USERNAME"
-Write-Output "Static IP set to 192.168.10.136—verify connectivity with 'ping 192.168.10.1' and DNS with 'nslookup google.com'."
+Write-Host "Script completed"
