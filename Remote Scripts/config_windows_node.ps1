@@ -1,5 +1,5 @@
-# Set-StaticIP-Dynamic.ps1
-# Updated script with fixed DNS, DoH support, and no ping check
+# Set-StaticIP-Dynamic-SSH.ps1
+# Script to configure static IP and enable SSH on Windows 11 Pro VM
 
 # Target IP address
 $TargetIPAddress = "192.168.10.136"
@@ -43,7 +43,6 @@ try {
         -ErrorAction Stop
     
     # Optional: Enable DNS over HTTPS (DoH) for encryption
-    # Requires Windows 11 22H2 or later
     Set-DnsClientDohServerAddress -ServerAddress "8.8.8.8" `
         -DohTemplate "https://dns.google/dns-query" `
         -AutoUpgrade $true `
@@ -53,12 +52,39 @@ try {
         -AutoUpgrade $true `
         -ErrorAction SilentlyContinue
     
+    # Enable SSH Server
+    # Install OpenSSH Server if not already installed
+    if (-not (Get-WindowsCapability -Online | Where-Object { $_.Name -like "OpenSSH.Server*" -and $_.State -eq "Installed" })) {
+        Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0 -ErrorAction Stop
+    }
+    
+    # Start and configure SSH service
+    Set-Service -Name sshd -StartupType Automatic -ErrorAction Stop
+    Start-Service -Name sshd -ErrorAction Stop
+    
+    # Configure firewall rule for SSH (port 22)
+    $FirewallRule = Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyContinue
+    if (-not $FirewallRule) {
+        New-NetFirewallRule -Name "OpenSSH-Server-In-TCP" `
+            -DisplayName "OpenSSH Server (sshd)" `
+            -Enabled True `
+            -Direction Inbound `
+            -Protocol TCP `
+            -Action Allow `
+            -LocalPort 22 `
+            -ErrorAction Stop
+    }
+    
     # Verify configuration
     $NewConfig = Get-NetIPConfiguration -InterfaceAlias $InterfaceAlias
     Write-Host "New IP Configuration:"
     $NewConfig | Format-List
     
-    Write-Host "Network configuration applied successfully" -ForegroundColor Green
+    # Verify SSH service
+    $SSHStatus = Get-Service -Name sshd
+    Write-Host "SSH Service Status: $($SSHStatus.Status)" -ForegroundColor Green
+    
+    Write-Host "Network and SSH configuration applied successfully" -ForegroundColor Green
     
 } catch {
     Write-Error "Configuration failed: $_"
