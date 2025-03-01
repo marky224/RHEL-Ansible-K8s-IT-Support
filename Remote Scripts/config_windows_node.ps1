@@ -1,48 +1,83 @@
-# PowerShell script to configure Windows 11 Pro worker with static IP, DNS over HTTPS, and enable SSH
-# Run as Administrator
+# Set-StaticIP-Dynamic.ps1
+# Updated script with fixed DNS and optional DoH support
 
-# Dynamically detect the first active non-loopback interface
-$interface = (Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.Name -notlike "*Loopback*" } | Select-Object -First 1).Name
-if (-not $interface) {
-    Write-Output "Error: No active non-loopback network interface found."
-    exit 1
+# Target IP address
+$TargetIPAddress = "192.168.10.136"
+
+try {
+    # Get the active network interface
+    $Interface = Get-NetAdapter | 
+        Where-Object { $_.Status -eq "Up" -and $_.Name -like "Ethernet*" } | 
+        Select-Object -First 1
+    
+    if (-not $Interface) {
+        throw "No active Ethernet adapter found"
+    }
+    
+    $InterfaceAlias = $Interface.Name
+    
+    # Get current IP configuration
+    $IPConfig = Get-NetIPConfiguration -InterfaceAlias $InterfaceAlias
+    
+    # Gather existing network parameters (except DNS)
+    $DefaultGateway = $IPConfig.IPv4DefaultGateway.NextHop
+    $CurrentIP = Get-NetIPAddress -InterfaceAlias $InterfaceAlias -AddressFamily IPv4
+    $SubnetMaskBits = $CurrentIP.PrefixLength
+    
+    # Define DNS servers (Google's public DNS)
+    $DNSServers = "8.8.8.8", "8.8.4.4"
+    
+    # Remove existing IP configuration
+    Remove-NetIPAddress -InterfaceAlias $InterfaceAlias -Confirm:$false
+    
+    # Set new static IP address
+    New-NetIPAddress -InterfaceAlias $InterfaceAlias `
+        -IPAddress $TargetIPAddress `
+        -PrefixLength $SubnetMaskBits `
+        -DefaultGateway $DefaultGateway `
+        -ErrorAction Stop
+    
+    # Configure DNS servers
+    Set-DnsClientServerAddress -InterfaceAlias $InterfaceAlias `
+        -ServerAddresses $DNSServers `
+        -ErrorAction Stop
+    
+    # Optional: Enable DNS over HTTPS (DoH) for encryption
+    # Requires Windows 11 22H2 or later
+    Set-DnsClientDohServerAddress -ServerAddress "8.8.8.8" `
+        -DohTemplate "https://dns.google/dns-query" `
+        -AutoUpgrade $true `
+        -ErrorAction SilentlyContinue
+    Set-DnsClientDohServerAddress -ServerAddress "8.8.4.4" `
+        -DohTemplate "https://dns.google/dns-query" `
+        -AutoUpgrade $true `
+        -ErrorAction SilentlyContinue
+    
+    # Verify configuration
+    $NewConfig = Get-NetIPConfiguration -InterfaceAlias $InterfaceAlias
+    Write-Host "New IP Configuration:"
+    $NewConfig | Format-List
+    
+    # Test connectivity
+    $PingTest = Test-NetConnection -ComputerName $DefaultGateway
+    if ($PingTest.PingSucceeded) {
+        Write-Host "Gateway connectivity confirmed" -ForegroundColor Green
+    } else {
+        Write-Warning "Gateway ping failed - please check network configuration"
+    }
+    
+    # Test DNS
+    $DNSTest = Test-NetConnection -ComputerName "google.com"
+    if ($DNSTest.PingSucceeded) {
+        Write-Host "DNS resolution confirmed" -ForegroundColor Green
+    } else {
+        Write-Warning "DNS resolution failed - please check DNS settings"
+    }
+    
+} catch {
+    Write-Error "Configuration failed: $_"
+    Write-Host "Reverting to DHCP as fallback..."
+    Set-NetIPInterface -InterfaceAlias $InterfaceAlias -Dhcp Enabled
 }
 
-# Gather current info
-Write-Output "Current Configuration:"
-Write-Output "Hostname: $env:COMPUTERNAME"
-Write-Output "IP: $((Get-NetIPAddress -InterfaceAlias $interface -AddressFamily IPv4).IPAddress)"
-Write-Output "Gateway: $((Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Where-Object { $_.InterfaceAlias -eq $interface }).NextHop)"
-Write-Output "DNS Servers: $((Get-DnsClientServerAddress -InterfaceAlias $interface -AddressFamily IPv4).ServerAddresses -join ', ')"
-Write-Output "OS: $([System.Environment]::OSVersion.VersionString)"
-Write-Output "User: $env:USERNAME"
-
-# Set static IP to 192.168.10.136 with NAT gateway
-Write-Output "Setting static IP to 192.168.10.136 on interface $interface with gateway 192.168.10.1..."
-New-NetIPAddress -InterfaceAlias $interface -IPAddress 192.168.10.136 -PrefixLength 24 -DefaultGateway 192.168.10.1
-
-# Set DNS to 8.8.8.8 with DoH enabled
-Write-Output "Configuring DNS to 8.8.8.8 with DNS over HTTPS..."
-Set-DnsClientServerAddress -InterfaceAlias $interface -ServerAddresses "8.8.8.8"
-Set-DnsClientDohServerAddress -ServerAddress "8.8.8.8" -DohTemplate "https://dns.google/dns-query" -AutoUpgrade $true -AllowFallback $true
-
-# Enable OpenSSH Server for Ansible connectivity
-Write-Output "Enabling OpenSSH Server for Ansible connectivity..."
-Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
-Start-Service sshd
-Set-Service sshd -StartupType Automatic
-
-# Configure firewall for SSH (port 22)
-Write-Output "Configuring firewall to allow SSH from 192.168.10.0/24..."
-New-NetFirewallRule -DisplayName "Allow SSH" -Direction Inbound -Protocol TCP -LocalPort 22 -Action Allow -Profile Any -RemoteAddress 192.168.10.0/24
-
-# Verify new configuration
-Write-Output "New Configuration:"
-Write-Output "Hostname: $env:COMPUTERNAME"
-Write-Output "IP: $((Get-NetIPAddress -InterfaceAlias $interface -AddressFamily IPv4).IPAddress)"
-Write-Output "Gateway: $((Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Where-Object { $_.InterfaceAlias -eq $interface }).NextHop)"
-Write-Output "DNS Servers: $((Get-DnsClientServerAddress -InterfaceAlias $interface -AddressFamily IPv4).ServerAddresses -join ', ')"
-Write-Output "OS: $([System.Environment]::OSVersion.VersionString)"
-Write-Output "User: $env:USERNAME"
-Write-Output "SSH Port: 22 (check with 'netstat -an | findstr :22')"
-Write-Output "Static IP set to 192.168.10.136 and SSH enabled—verify connectivity with 'ping 192.168.10.1', DNS with 'nslookup google.com', and internet with 'ping 8.8.8.8'."
+Write-Host "Script completed"
