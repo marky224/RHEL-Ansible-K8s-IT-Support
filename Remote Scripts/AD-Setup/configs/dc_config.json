@@ -66,9 +66,9 @@
             }
           },
           "Storage": {
-            "DatabasePath": "E:\\AD\\Database",
-            "LogPath": "E:\\AD\\Logs",
-            "SysvolPath": "E:\\AD\\SYSVOL"
+            "DatabasePath": "C:\\AD\\Database",
+            "LogPath": "C:\\AD\\Logs",
+            "SysvolPath": "C:\\AD\\SYSVOL"
           }
         }
       ],
@@ -104,7 +104,7 @@
     "EnableSMBSigning": true
   },
   "Backup": {
-    "Target": "F:",
+    "Target": "C:",
     "Schedule": "Daily",
     "Time": "02:00"
   }
