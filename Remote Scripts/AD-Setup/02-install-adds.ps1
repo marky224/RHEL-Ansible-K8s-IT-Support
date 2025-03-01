@@ -1,5 +1,5 @@
 # 02-install-adds.ps1
-# Dynamically set config path relative to script location
+# Script to install and configure Active Directory Domain Services
 $ConfigPath = Join-Path -Path $PSScriptRoot -ChildPath "configs\dc_config.json"
 $logFile = "C:\Users\marky\AC-DC\Configuration\ADSetup.log"
 
@@ -8,6 +8,7 @@ function Write-Log {
     param ($message)
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     "$timestamp - $message" | Out-File -FilePath $logFile -Append
+    Write-Host $message
 }
 
 # Verify config file exists
@@ -134,6 +135,6 @@ if ($addsStatus.InstallState -eq "Installed") {
     exit 1
 }
 
-# Note: Server should reboot automatically if successful
-Write-Host "AD DS installation initiated. Server will reboot. After reboot, run a script to set DNS to 192.168.10.10."
+# Note: Server should reboot if successful
+Write-Host "AD DS installation initiated. Server will reboot. After reboot, run 03-verify-dc.ps1 to check status."
 Write-Log "AD DS installation initiated, server rebooting."
