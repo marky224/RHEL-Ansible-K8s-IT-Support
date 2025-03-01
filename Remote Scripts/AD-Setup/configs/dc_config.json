@@ -67,8 +67,8 @@
           },
           "Storage": {
             "DatabasePath": "D:\\AD\\Database",
-            "LogPath": "E:\\AD\\Logs",
-            "SysvolPath": "F:\\AD\\SYSVOL"
+            "LogPath": "D:\\AD\\Logs",
+            "SysvolPath": "D:\\AD\\SYSVOL"
           }
         }
       ],
