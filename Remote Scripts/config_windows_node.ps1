@@ -1,4 +1,4 @@
-# PowerShell script to configure Windows 11 Pro worker with static IP and enable WinRM over HTTPS
+# PowerShell script to configure Windows 11 Pro worker with static IP and enable SSH
 # Run as Administrator
 
 # Dynamically detect the first active non-loopback interface
@@ -20,26 +20,21 @@ Write-Output "Setting static IP to 192.168.10.136 on interface $interface..."
 New-NetIPAddress -InterfaceAlias $interface -IPAddress 192.168.10.136 -PrefixLength 24 -DefaultGateway 192.168.10.1
 Set-DnsClientServerAddress -InterfaceAlias $interface -ServerAddresses ("8.8.8.8", "8.8.4.4")
 
-# Enable WinRM over HTTPS
-Write-Output "Enabling WinRM over HTTPS for Ansible connectivity..."
+# Enable OpenSSH Server
+Write-Output "Enabling OpenSSH Server for Ansible connectivity..."
+Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+Start-Service sshd
+Set-Service sshd -StartupType Automatic
 
-# Generate a self-signed certificate
-$cert = New-SelfSignedCertificate -DnsName $env:COMPUTERNAME -CertStoreLocation "Cert:\LocalMachine\My"
-$thumbprint = $cert.Thumbprint
+# Configure firewall for SSH (port 22)
+Write-Output "Configuring firewall to allow SSH from 192.168.10.0/24..."
+New-NetFirewallRule -DisplayName "Allow SSH" -Direction Inbound -Protocol TCP -LocalPort 22 -Action Allow -Profile Any -RemoteAddress 192.168.10.0/24
 
-# Configure WinRM HTTPS listener
-winrm quickconfig -q
-winrm create winrm/config/Listener?Address=*+Transport=HTTPS "@{Hostname=`"$env:COMPUTERNAME`";CertificateThumbprint=`"$thumbprint`"}"
-Set-Item WSMan:\localhost\Client\TrustedHosts -Value "192.168.10.*" -Force
-
-# Add firewall rule for WinRM HTTPS (port 5986) on Public networks
-Write-Output "Adding WinRM HTTPS firewall rule for Public networks..."
-New-NetFirewallRule -DisplayName "Allow WinRM HTTPS" -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow -Profile Public -RemoteAddress 192.168.10.0/24
-
-# Verify new IP and WinRM status
+# Verify new configuration
 Write-Output "New Configuration:"
 Write-Output "Hostname: $env:COMPUTERNAME"
 Write-Output "IP: $((Get-NetIPAddress -InterfaceAlias $interface -AddressFamily IPv4).IPAddress)"
 Write-Output "OS: $([System.Environment]::OSVersion.VersionString)"
 Write-Output "User: $env:USERNAME"
-Write-Output "Static IP set to 192.168.10.136 and WinRM enabled over HTTPS (port 5986)."
+Write-Output "SSH Port: 22 (check with 'netstat -an | findstr :22')"
+Write-Output "Static IP set to 192.168.10.136 and SSH enabled for Ansible connection."
