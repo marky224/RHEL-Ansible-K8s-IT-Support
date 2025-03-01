@@ -22,18 +22,6 @@ $gateway = (Get-NetRoute | Where-Object { $_.DestinationPrefix -eq '0.0.0.0/0' -
 # Get current DNS server dynamically (first server only)
 $currentDnsServers = (Get-DnsClientServerAddress -InterfaceAlias $interfaceName -AddressFamily IPv4).ServerAddresses[0]
 
-# Debug output
-Write-Host "Current Hostname: $currentHostname"
-Write-Host "Current IP: $currentIpAddress"
-Write-Host "Current PrefixLength: $prefixLength"
-Write-Host "Current Gateway: $gateway"
-Write-Host "Current DNSServer: $currentDnsServers"
-Write-Host "Target Hostname: $($dcConfig.Hostname)"
-Write-Host "Target StaticIP: $($networkConfig.StaticIP)"
-Write-Host "Target PrefixLength: $prefixLength (preserving current)"
-Write-Host "Target Gateway: $gateway (preserving current)"
-Write-Host "Target DNSServer: $currentDnsServers (preserving current)"
-
 # Set static IP if not already correct, reapplying current gateway, prefix, and DNS
 if ($currentIpAddress -ne $networkConfig.StaticIP) {
     Write-Host "Setting new IP address, preserving current gateway and settings..."
@@ -59,18 +47,6 @@ if ($currentIpAddress -ne $networkConfig.StaticIP) {
         Write-Host "Gateway and DNS already set, no changes needed."
     }
 }
-
-# Debug output
-Write-Host "Current Hostname: $currentHostname"
-Write-Host "Current IP: $currentIpAddress"
-Write-Host "Current PrefixLength: $prefixLength"
-Write-Host "Current Gateway: $gateway"
-Write-Host "Current DNSServer: $currentDnsServers"
-Write-Host "Target Hostname: $($dcConfig.Hostname)"
-Write-Host "Target StaticIP: $($networkConfig.StaticIP)"
-Write-Host "Target PrefixLength: $prefixLength (preserving current)"
-Write-Host "Target Gateway: $gateway (preserving current)"
-Write-Host "Target DNSServer: $currentDnsServers (preserving current)"
 
 # Rename computer
 Rename-Computer -NewName $dcConfig.Hostname -Force -Restart
