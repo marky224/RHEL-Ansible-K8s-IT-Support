@@ -17,9 +17,9 @@ Write-Output "DNS Servers: $((Get-DnsClientServerAddress -InterfaceAlias $interf
 Write-Output "OS: $([System.Environment]::OSVersion.VersionString)"
 Write-Output "User: $env:USERNAME"
 
-# Set static IP to 192.168.10.136
-Write-Output "Setting static IP to 192.168.10.136 on interface $interface..."
-New-NetIPAddress -InterfaceAlias $interface -IPAddress 192.168.10.136 -PrefixLength 24 -DefaultGateway 192.168.10.1
+# Set static IP to 192.168.10.116
+Write-Output "Setting static IP to 192.168.10.116 on interface $interface..."
+New-NetIPAddress -InterfaceAlias $interface -IPAddress 192.168.10.116 -PrefixLength 24 -DefaultGateway 192.168.10.1
 Set-DnsClientServerAddress -InterfaceAlias $interface -ServerAddresses ("8.8.8.8", "8.8.4.4")
 
 # Verify new configuration
@@ -30,4 +30,4 @@ Write-Output "Gateway: $((Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Where-Ob
 Write-Output "DNS Servers: $((Get-DnsClientServerAddress -InterfaceAlias $interface -AddressFamily IPv4).ServerAddresses -join ', ')"
 Write-Output "OS: $([System.Environment]::OSVersion.VersionString)"
 Write-Output "User: $env:USERNAME"
-Write-Output "Static IP set to 192.168.10.136—verify internet with 'ping 8.8.8.8' and DNS with 'nslookup google.com'."
+Write-Output "Static IP set to 192.168.10.116—verify internet with 'ping 8.8.8.8' and DNS with 'nslookup google.com'."
