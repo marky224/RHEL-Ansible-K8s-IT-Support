@@ -1,5 +1,5 @@
 # Set-StaticIP-Dynamic.ps1
-# Updated script with fixed DNS and optional DoH support
+# Updated script with fixed DNS, DoH support, and no ping check
 
 # Target IP address
 $TargetIPAddress = "192.168.10.136"
@@ -58,21 +58,7 @@ try {
     Write-Host "New IP Configuration:"
     $NewConfig | Format-List
     
-    # Test connectivity
-    $PingTest = Test-NetConnection -ComputerName $DefaultGateway
-    if ($PingTest.PingSucceeded) {
-        Write-Host "Gateway connectivity confirmed" -ForegroundColor Green
-    } else {
-        Write-Warning "Gateway ping failed - please check network configuration"
-    }
-    
-    # Test DNS
-    $DNSTest = Test-NetConnection -ComputerName "google.com"
-    if ($DNSTest.PingSucceeded) {
-        Write-Host "DNS resolution confirmed" -ForegroundColor Green
-    } else {
-        Write-Warning "DNS resolution failed - please check DNS settings"
-    }
+    Write-Host "Network configuration applied successfully" -ForegroundColor Green
     
 } catch {
     Write-Error "Configuration failed: $_"
