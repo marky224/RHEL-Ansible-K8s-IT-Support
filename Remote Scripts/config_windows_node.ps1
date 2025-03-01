@@ -18,9 +18,9 @@ Write-Output "OS: $([System.Environment]::OSVersion.VersionString)"
 Write-Output "User: $env:USERNAME"
 
 # Set static IP to 192.168.10.116 with local DNS
-Write-Output "Setting static IP to 192.168.10.116 on interface $interface with DNS 192.168.10.1..."
+Write-Output "Setting static IP to 192.168.10.116 on interface $interface with DNS 8.8.8.8..."
 New-NetIPAddress -InterfaceAlias $interface -IPAddress 192.168.10.116 -PrefixLength 24 -DefaultGateway 192.168.10.1
-Set-DnsClientServerAddress -InterfaceAlias $interface -ServerAddresses "192.168.10.1"
+Set-DnsClientServerAddress -InterfaceAlias $interface -ServerAddresses "8.8.8.8"
 
 # Enable OpenSSH Server
 Write-Output "Enabling OpenSSH Server for Ansible connectivity..."
