@@ -44,14 +44,17 @@ if (-not $adminAccount) {
 Write-Host "Installing AD Domain Services and DNS roles..."
 Install-WindowsFeature -Name AD-Domain-Services, DNS -IncludeManagementTools -ErrorAction Stop
 
-# Promote to Domain Controller using the same password for Safe Mode
+# Promote to Domain Controller with dynamic Safe Mode password
 Write-Host "Promoting this server to a Domain Controller for $domainName..."
+# Prompt for Safe Mode password separately
+$safeModePassword = Read-Host -Prompt "Enter a strong password for Safe Mode Administrator.`nThis is CRITICAL for recovery if the DC fails to boot normally. It can be the same as the 'Admin' password but doesn’t have to be. Save it securely!`nPassword" -AsSecureString
+Write-Host "Starting DC promotion process (this may take several minutes)..."
 Install-ADDSForest `
     -DomainName $domainName `
     -DomainNetbiosName $netbiosName `
     -ForestMode $forestMode `
     -DomainMode $domainMode `
-    -SafeModeAdministratorPassword $password `
+    -SafeModeAdministratorPassword $safeModePassword `
     -InstallDns `
     -CreateDnsDelegation:$false `
     -DatabasePath $config.Sites[0].DomainControllers[0].Storage.DatabasePath `
