@@ -1,4 +1,4 @@
-# PowerShell script to configure Windows 11 Pro worker with static IP and enable SSH
+# PowerShell script to configure Windows 11 Pro worker with static IP, DNS over HTTPS, and enable SSH
 # Run as Administrator
 
 # Dynamically detect the first active non-loopback interface
@@ -17,10 +17,14 @@ Write-Output "DNS Servers: $((Get-DnsClientServerAddress -InterfaceAlias $interf
 Write-Output "OS: $([System.Environment]::OSVersion.VersionString)"
 Write-Output "User: $env:USERNAME"
 
-# Set static IP to 192.168.10.136 with NAT gateway and public DNS
-Write-Output "Setting static IP to 192.168.10.136 on interface $interface with gateway 192.168.10.1 and DNS 8.8.8.8..."
+# Set static IP to 192.168.10.136 with NAT gateway
+Write-Output "Setting static IP to 192.168.10.136 on interface $interface with gateway 192.168.10.1..."
 New-NetIPAddress -InterfaceAlias $interface -IPAddress 192.168.10.136 -PrefixLength 24 -DefaultGateway 192.168.10.1
+
+# Set DNS to 8.8.8.8 with DoH enabled
+Write-Output "Configuring DNS to 8.8.8.8 with DNS over HTTPS..."
 Set-DnsClientServerAddress -InterfaceAlias $interface -ServerAddresses "8.8.8.8"
+Set-DnsClientDohServerAddress -ServerAddress "8.8.8.8" -DohTemplate "https://dns.google/dns-query" -AutoUpgrade $true -AllowFallback $true
 
 # Enable OpenSSH Server for Ansible connectivity
 Write-Output "Enabling OpenSSH Server for Ansible connectivity..."
