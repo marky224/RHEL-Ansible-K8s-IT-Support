@@ -17,19 +17,41 @@ $netbiosName = $config.NetbiosName        # "NXL"
 $forestMode = $config.ForestMode          # "Win2025"
 $domainMode = $config.DomainMode          # "Win2025"
 
+# Check if local 'Admin' account exists
+$adminAccount = Get-LocalUser -Name "Admin" -ErrorAction SilentlyContinue
+if (-not $adminAccount) {
+    Write-Host "Local 'Admin' account not found. Creating it now..."
+    # Prompt for a secure password with importance warning
+    $password = Read-Host -Prompt "Enter a strong password for the 'Admin' account.`nThis password is CRITICAL: It will become the domain Administrator password after DC promotion and is also used for Safe Mode recovery. Save it securely!`nPassword" -AsSecureString
+    # Create the 'Admin' account
+    New-LocalUser -Name "Admin" -Password $password -FullName "Administrator" -Description "Domain Administrator" -ErrorAction Stop
+    Add-LocalGroupMember -Group "Administrators" -Member "Admin" -ErrorAction Stop
+    Write-Host "'Admin' account created and added to Administrators group."
+} else {
+    Write-Host "'Admin' account already exists."
+    # Prompt for password if we need to reset it (optional)
+    $reset = Read-Host "Do you want to reset the 'Admin' password? (Y/N)"
+    if ($reset -eq "Y" -or $reset -eq "y") {
+        $password = Read-Host -Prompt "Enter a new strong password for the 'Admin' account.`nThis password is CRITICAL: It will become the domain Administrator password after DC promotion and is also used for Safe Mode recovery. Save it securely!`nPassword" -AsSecureString
+        Set-LocalUser -Name "Admin" -Password $password -ErrorAction Stop
+        Write-Host "'Admin' password reset successfully."
+    } else {
+        $password = Read-Host -Prompt "Enter the existing 'Admin' password (required for Safe Mode).`nThis must match the current password!`nPassword" -AsSecureString
+    }
+}
+
 # Install AD Domain Services and DNS roles
 Write-Host "Installing AD Domain Services and DNS roles..."
 Install-WindowsFeature -Name AD-Domain-Services, DNS -IncludeManagementTools -ErrorAction Stop
 
-# Promote to Domain Controller
-$safeModePassword = ConvertTo-SecureString "YourSecurePassword123!" -AsPlainText -Force
+# Promote to Domain Controller using the same password for Safe Mode
 Write-Host "Promoting this server to a Domain Controller for $domainName..."
 Install-ADDSForest `
     -DomainName $domainName `
     -DomainNetbiosName $netbiosName `
     -ForestMode $forestMode `
     -DomainMode $domainMode `
-    -SafeModeAdministratorPassword $safeModePassword `
+    -SafeModeAdministratorPassword $password `
     -InstallDns `
     -CreateDnsDelegation:$false `
     -DatabasePath $config.Sites[0].DomainControllers[0].Storage.DatabasePath `
