@@ -11,11 +11,21 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 $HostName = "w11pro-wsXX"
 $NodeIP = "192.168.0.136"
 
+# Get the active network adapter name
+$Adapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.InterfaceDescription -notlike "*Virtual*" } | Select-Object -First 1
+if (-not $Adapter) {
+    Write-Host "Error: No active network adapter found." -ForegroundColor Red
+    Exit 1
+}
+$InterfaceAlias = $Adapter.Name
+
+Write-Host "Using network adapter: $InterfaceAlias"
+
 # Set hostname
 Rename-Computer -NewName $HostName -Force -Restart
 
 # Set static IP (no default gateway or DNS specified)
-New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress $NodeIP -PrefixLength 24
+New-NetIPAddress -InterfaceAlias $InterfaceAlias -IPAddress $NodeIP -PrefixLength 24
 
 # Install OpenSSH Server (run this part after reboot manually or via a scheduled task)
 Install-WindowsFeature -Name OpenSSH-Server
