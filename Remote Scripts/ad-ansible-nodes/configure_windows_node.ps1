@@ -10,14 +10,12 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 # Variables
 $HostName = "w11pro-wsXX"
 $NodeIP = "192.168.0.136"
-$DC_IP = "192.168.0.10"  # Confirmed AD DC IP
 
 # Set hostname
 Rename-Computer -NewName $HostName -Force -Restart
 
-# Set static IP and DNS (no default gateway specified)
+# Set static IP (no default gateway or DNS specified)
 New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress $NodeIP -PrefixLength 24
-Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddresses $DC_IP
 
 # Install OpenSSH Server (run this part after reboot manually or via a scheduled task)
 Install-WindowsFeature -Name OpenSSH-Server
