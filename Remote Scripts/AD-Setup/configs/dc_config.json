@@ -56,10 +56,10 @@
         {
           "Hostname": "NXL-DC01",
           "Network": {
-            "StaticIP": "192.168.10.10",
+            "StaticIP": "192.168.0.10",
             "SubnetMask": "255.255.255.0",
-            "Gateway": "192.168.10.1",
-            "DnsServers": ["192.168.10.10"],
+            "Gateway": "192.168.0.1",
+            "DnsServers": ["8.8.8.8"],
             "Ports": {
               "WinRM": [5985, 5986],
               "SSH": 22
@@ -72,15 +72,15 @@
           }
         }
       ],
-      "Subnet": "192.168.10.0/24",
+      "Subnet": "192.168.0.0/24",
       "DnsForwarder": "8.8.8.8",
       "DHCP": {
-        "PoolStart": "192.168.10.125",
-        "PoolEnd": "192.168.10.254"
+        "PoolStart": "192.168.0.125",
+        "PoolEnd": "192.168.0.254"
       },
       "Ansible": {
         "ControlNode": "NXL-ANSIBLE01",
-        "ControlNodeIP": "192.168.10.100",
+        "ControlNodeIP": "192.168.0.100",
         "RemoteNodeGroup": "HQ-ManagedNodes",
         "Connection": {
           "Linux": "ssh",
