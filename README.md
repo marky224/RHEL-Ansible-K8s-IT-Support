@@ -1,68 +1,48 @@
-# RHEL Ansible + Kubernetes Infrastructure for IT Support
+# RHEL-Ansible-K8s-IT-Support
 
-## Overview
-This project establishes a **Red Hat Enterprise Linux (RHEL) 9 virtual machine** as a control node, leveraging **Ansible** for configuration management and **Kubernetes** for container orchestration to support IT operations for large internal IT teams and/or Managed Service Providers (MSPs). It manages a fleet of remote PCs—Linux and Windows—providing tools for monitoring, ticketing, and system administration.
+Welcome to my IT support and automation project repository! This project is focused on building a virtualized network environment with automation scripts to streamline provisioning and management. The goal is to simulate a robust enterprise-grade network, leveraging tools like Red Hat Enterprise Linux (RHEL), Ansible, Active Directory, Kubernetes, and now Cisco and F5 technologies.
 
-The infrastructure integrates an **Active Directory Domain Controller (AD DC)** for centralized authentication and DNS, enabling seamless management of diverse operating systems and containerized services.
+## Project Overview
+This repository contains scripts, configurations, and documentation for setting up and managing a virtualized network environment. The network currently includes a mix of Windows and Linux systems, with plans to integrate Cisco routing equipment and F5 Load Balancers to enhance functionality and align with real-world enterprise needs, such as those in financial institutions requiring PCI DSS compliance.
 
-## Features
-- **Ansible Control Node**: Manages remote PCs via SSH (Linux) and WinRM (Windows).
-- **Kubernetes Cluster**: Runs containerized MSP tools (e.g., Prometheus, Grafana, OSTicket) on the control node or additional nodes.
-- **Active Directory Integration**: Provides centralized identity and DNS services for Ansible and Kubernetes.
-- **Remote PCs**: Supports diverse OSes (RHEL 9, Windows 11 Pro) for comprehensive IT management.
-- **Automation Scripts**: Simplifies deployment and connectivity setup across AD, Ansible, and Kubernetes.
+## Objectives
+- Automate the provisioning of a virtualized network using Ansible for scalability and efficiency.
+- Integrate Active Directory for centralized domain authentication.
+- Incorporate Cisco routing equipment for network connectivity and F5 Load Balancers for traffic management, reflecting enterprise-grade infrastructure.
 
-## Repository Structure
-```
-Main-Repository/
-├── Remote-Scripts/           # Scripts for remote management
-│   ├── AD-Setup/            # Active Directory setup scripts
-│   └── [Other Subfolders]   # Future Ansible/Kubernetes scripts
-├── README.md                # This file
-└── .gitignore               # Exclusions for sensitive data
-```
+### Current Network Setup
+- **Windows 11 Pro VM**: A fully operational virtual machine running Windows 11 Pro, serving as a client or testing workstation.
+- **RHEL 9 Workstation VM**: A Red Hat Enterprise Linux 9 workstation VM, set up for administrative tasks and testing.
+- **Active Directory Domain Controller**: Recently completed (the hardest part!), this Windows-based VM manages domain authentication for the network.
+- **Ansible Control Node**: In progress, this RHEL-based node will handle most automation tasks within the network once finalized.
 
-## Prerequisites
-
-### Control Node
-- **RHEL 9 VM in VMware Workstation**:
-  - 4GB+ RAM, 4+ CPU cores, 50GB+ disk space.
-  - Static IP (e.g., `192.168.X.100`) on a dedicated subnet (e.g., `192.168.X.0/24`).
-- **Red Hat Subscription**: Required for RHEL and Ansible repositories.
-- **Software**: Ansible installed, Kubernetes (e.g., via Minikube or Kubeadm) planned.
-
-### Remote PCs
-- **RHEL 9 VMs**: Configured with SSH and AD integration (via `realmd`/SSSD).
-- **Windows 11 Pro VMs**: Configured with WinRM and joined to AD.
-- **Network**: Same subnet as the control node (e.g., `192.168.X.0/24`), with access to the control node (`192.168.X.100`).
-
-### Active Directory Domain Controller
-- **Windows Server 2025 VM**: Runs AD DS and DNS, configured via `Remote-Scripts/AD-Setup/`.
-- **Network**: Same subnet, static IP (e.g., `192.168.X.10`).
-
-## Setup Instructions
-1. **Deploy AD DC**:
-   - Navigate to `Remote-Scripts/AD-Setup/`.
-   - Edit `configs/dc_config.json` with your domain and network details.
-   - Run scripts in sequence (e.g., `01-prepare.ps1`, `02-install-adds.ps1`).
-
-2. **Configure Control Node**:
-   - Install RHEL 9 on the VM, activate subscription, and install Ansible.
-   - Join the AD domain for centralized authentication.
-
-3. **Set Up Remote PCs**:
-   - Configure Linux PCs with SSH and AD (SSSD).
-   - Configure Windows PCs with WinRM and AD domain membership.
-
-4. **Deploy Kubernetes**:
-   - Install Kubernetes on the control node or additional nodes.
-   - Deploy containerized tools (e.g., Prometheus, Grafana, OSTicket).
+### Planned Additions
+- **Cisco Routing Equipment**: Scripts will be developed to automate the provisioning and configuration of a Cisco router virtual image, ensuring network connectivity and routing across the virtual environment.
+- **F5 Load Balancers**: Scripts will also automate the provisioning of an F5 Load Balancer virtual image, enabling traffic distribution and load balancing for simulated web applications, with a focus on security and reliability.
 
 ## Next Steps
-- Finalize AD configuration in `AD-Setup/configs/dc_config.json`.
-- Develop Ansible playbooks for remote node management.
-- Script Kubernetes cluster deployment and tool installation.
+1. **Finalize the Ansible Control Node**: Complete the setup and configuration of the Ansible control node on the RHEL 9 VM. This will serve as the central hub for automating network provisioning and management tasks.
+2. **Develop Cisco Router Automation Scripts**: Create Ansible playbooks to provision and configure the Cisco router virtual image, ensuring it integrates with the existing network for routing and connectivity.
+3. **Develop F5 Load Balancer Automation Scripts**: Build scripts to automate the provisioning and setup of the F5 Load Balancer virtual image, configuring it to handle traffic distribution within the network.
+4. **Test Network Integration**: Validate that the Active Directory Domain Controller, Cisco router, and F5 Load Balancer work seamlessly with the Windows 11 Pro and RHEL 9 VMs.
+5. **Documentation**: Update this README and add detailed guides for each component’s setup and automation process.
+
+## Progress Update
+- **Completed**: Active Directory Domain Controller setup (the most challenging component), Windows 11 Pro VM, and RHEL 9 Workstation VM.
+- **In Progress**: Finalizing the Ansible control node, which will take on the bulk of the network automation workload.
+- **Upcoming**: Automation scripts for Cisco routing equipment and F5 Load Balancers.
+
+## Tools and Technologies
+- **Red Hat Enterprise Linux 9**: Base OS for the workstation and Ansible control node.
+- **Ansible**: Automation tool for provisioning and managing network components.
+- **Active Directory**: Domain authentication and user management.
+- **Windows 11 Pro**: Client OS for testing and simulation.
+- **Cisco Router Virtual Image**: Network routing and connectivity.
+- **F5 Load Balancer Virtual Image**: Traffic distribution and load balancing.
+- **GitHub**: Version control and project documentation.
 
 ## Contributing
-- Add scripts to `Remote-Scripts/` for Ansible or Kubernetes tasks.
-- Update documentation in subfolder READMEs as the project evolves.
+Feel free to fork this repository, submit issues, or suggest improvements via pull requests. This is a learning project, and collaboration is welcome!
+
+## License
+This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details.
