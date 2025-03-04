@@ -183,60 +183,6 @@ else
     log "CA certificate already exists at $CA_CERT"
 fi
 
-# Create temporary directory for Docker build
-TEMP_DIR=$(mktemp -d)
-log "Created temporary directory $TEMP_DIR for Docker build"
-
-# Download Dockerfile and scripts from GitHub
-log "Downloading Docker files from GitHub..."
-for FILE in "Dockerfile" "entrypoint.sh" "checkin_listener.py" "ssh_key_server.py"; do
-    curl -o "$TEMP_DIR/$FILE" "$GITHUB_REPO/$FILE" || {
-        log "Error: Failed to download $FILE from $GITHUB_REPO/$FILE"
-        log "Ensure the file exists in the GitHub repository and the system has internet access."
-        rm -rf "$TEMP_DIR"
-        exit 1
-    }
-    chmod +x "$TEMP_DIR/$FILE"
-done
-log "Docker files downloaded to $TEMP_DIR"
-
-# Build Docker image
-log "Building Docker image $DOCKER_IMAGE..."
-docker build -t "$DOCKER_IMAGE" "$TEMP_DIR" || {
-    log "Error: Failed to build Docker image"
-    rm -rf "$TEMP_DIR"
-    exit 1
-}
-rm -rf "$TEMP_DIR"
-log "Docker image $DOCKER_IMAGE built successfully"
-
-# Run Docker containers
-log "Starting Docker containers for HTTPS services..."
-docker stop checkin-listener ssh-key-server >/dev/null 2>&1 || true  # Stop if running
-docker rm checkin-listener ssh-key-server >/dev/null 2>&1 || true    # Remove if exists
-docker run -d --name checkin-listener \
-    -p "$CHECKIN_PORT:$CHECKIN_PORT" \
-    -v "$CA_CERT:/certs/control_node_ca.crt:ro" \
-    -v "$CA_KEY:/certs/control_node_ca.key:ro" \
-    -e SERVICE=checkin_listener \
-    -e PORT="$CHECKIN_PORT" \
-    "$DOCKER_IMAGE" || {
-    log "Error: Failed to start checkin-listener container"
-    exit 1
-}
-docker run -d --name ssh-key-server \
-    -p "$((CHECKIN_PORT+1)):$CHECKIN_PORT" \
-    -v "$CA_CERT:/certs/control_node_ca.crt:ro" \
-    -v "$CA_KEY:/certs/control_node_ca.key:ro" \
-    -v "/root/.ssh/id_rsa.pub:/app/id_rsa.pub:ro" \
-    -e SERVICE=ssh_key_server \
-    -e PORT="$CHECKIN_PORT" \
-    "$DOCKER_IMAGE" || {
-    log "Error: Failed to start ssh-key-server container"
-    exit 1
-}
-log "Docker containers started (checkin-listener on $CHECKIN_PORT, ssh-key-server on $((CHECKIN_PORT+1)))"
-
 # Configure firewall
 log "Configuring firewall for SSH and ports $CHECKIN_PORT, $((CHECKIN_PORT+1))..."
 if ! firewall-cmd --list-services | grep -q ssh; then
