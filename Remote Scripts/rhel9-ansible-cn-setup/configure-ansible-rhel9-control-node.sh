@@ -127,13 +127,10 @@ if ! command -v ansible >/dev/null 2>&1 || ! command -v docker >/dev/null 2>&1; 
         log "Error: Failed to install ansible-core"
         exit 1
     }
-    systemctl enable docker --now || {
-        log "Error: Failed to enable/start Docker"
-        exit 1
-    }
-    log "Ansible and Docker installed successfully"
+
+    log "Ansible installed successfully"
 else
-    log "Ansible and Docker already installed"
+    log "Ansible already installed"
 fi
 
 # Generate or verify SSH key pair
